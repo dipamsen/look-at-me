@@ -1,35 +1,40 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, Platform } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, Image } from "react-native";
 import { Camera } from "expo-camera";
-import * as Permissions from "expo-permissions";
+import * as Font from "expo-font";
+import {
+  Montserrat_400Regular,
+  Montserrat_700Bold,
+} from "@expo-google-fonts/montserrat";
+import Filter from "../components/Filter";
+import { StatusBar } from "expo-status-bar";
 import * as FaceDetector from "expo-face-detector";
-import * as StatusBar from "expo-status-bar";
 
 class Main extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       hasCamPerms: null,
+      fontsLoaded: false,
       faces: [],
     };
   }
-  componentDidMount() {
-    Permissions.askAsync(Permissions.CAMERA).then(this.onCamPerms);
-  }
-  onCamPerms = (status) => {
-    this.setState({ hasCamPerms: status.status === "granted" });
-  };
-  onFacesDetected = (faces) => {
-    this.setState({
-      faces: faces.faces,
+  async loadFonts() {
+    await Font.loadAsync({
+      Regular: Montserrat_400Regular,
+      Bold: Montserrat_700Bold,
     });
-  };
-  onFaceDetectionError = (err) => {
-    console.log(err);
-  };
+    this.setState({ fontsLoaded: true });
+  }
+  componentDidMount() {
+    Camera.requestCameraPermissionsAsync().then((status) => {
+      this.setState({ hasCamPerms: status.granted });
+    });
+    this.loadFonts();
+  }
   render() {
-    const { hasCamPerms } = this.state;
-    if (hasCamPerms === null) {
+    const { hasCamPerms, fontsLoaded, faces } = this.state;
+    if (hasCamPerms === null || !fontsLoaded) {
       return <View />;
     }
     if (hasCamPerms === false) {
@@ -40,14 +45,15 @@ class Main extends React.Component {
       );
     }
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.droidSafeArea} />
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="light" />
         <View style={styles.headingContainer}>
-          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            <Text style={styles.titleText1}>Look At Me!</Text>
-          </View>
+          <Image
+            source={require("../assets/appIcon.png")}
+            style={styles.logo}
+          />
+          <Text style={styles.titleText}>Look At Me!</Text>
         </View>
-
         <View style={styles.cameraStyle}>
           <Camera
             style={{
@@ -55,40 +61,58 @@ class Main extends React.Component {
             }}
             type={Camera.Constants.Type.front}
             faceDetectorSettings={{
-              mode: 1,
-              detectLandmarks: 2,
-              runClassifications: 2,
+              mode: FaceDetector.FaceDetectorMode.fast,
+              detectLandmarks: FaceDetector.FaceDetectorLandmarks.none,
+              runClassifications: FaceDetector.FaceDetectorClassifications.none,
+              tracking: true,
+              // minDetectionInterval: 2000,
             }}
-            onFacesDetected={this.onFacesDetected}
-            onFacesDetectionError={this.onFaceDetectionError}
-          />
+            onMountError={console.log}
+            onFacesDetected={(faces) => {
+              // console.log(faces);
+              this.setState({
+                faces: faces.faces,
+              });
+            }}
+            onFacesDetectionError={console.log}
+          ></Camera>
+          {faces.map((face, i) => (
+            <Filter key={i} face={face} />
+          ))}
         </View>
+
         <View style={styles.framesContainer}></View>
-        <View style={styles.filterContainer}></View>
-        <View style={styles.actionContainer}></View>
-      </View>
+      </SafeAreaView>
     );
   }
 }
 
 export default Main;
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  droidSafeArea: {
-    marginTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  container: {
+    flex: 1,
+    //  backgroundColor: "black"
   },
   headingContainer: {
-    flex: 0.15,
+    flex: 0.1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "orange",
+    marginTop: 30,
   },
-  titleText1: {
+  logo: {
+    width: 60,
+    height: 60,
+    borderRadius: 40,
+    marginRight: 10,
+  },
+  titleText: {
     fontSize: 30,
-    fontWeight: "bold",
     color: "black",
+    fontFamily: "Bold",
   },
-  cameraStyle: { flex: 0.65 },
+  cameraStyle: { flex: 0.7 },
   framesContainer: {
     flex: 0.2,
     paddingLeft: 20,
