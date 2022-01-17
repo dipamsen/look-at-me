@@ -10,6 +10,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "githubUrl": "https://github.com/dipamsen/look-at-me",
     "updates": {
       "fallbackToCacheTimeout": 0
     },

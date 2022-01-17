@@ -2,10 +2,11 @@ import React, { Component } from "react";
 import { Text, View, Image } from "react-native";
 import BoundingBox from "./BoundingBox";
 import Dot from "./Dot";
-
+import FilterClass from "../models/FilterClass";
 export default class Filter extends Component {
   render() {
-    const { face } = this.props;
+    /** @type {{face: any, filter: FilterClass}} */
+    const { face, filter } = this.props;
     // console.log(face);
     const {
       bounds: { size, origin },
@@ -20,26 +21,29 @@ export default class Filter extends Component {
       RIGHT_EYE,
       RIGHT_MOUTH,
     } = face;
-    const topCenter = {
-      x: origin.x + size.width / 2,
-      y: origin.y,
-    };
-    const img = require("../assets/crown-pic1.png");
-    const imgDim = Image.resolveAssetSource(img);
-    const scale = 1.2;
-    const newW = imgDim.width * scale;
-    const newH = imgDim.height * scale;
+    origin.y -= size.height / 5;
+    size.height *= 6 / 5;
+    const img = filter.image;
+    const pos = filter.calcPosition(filter.position, origin, size);
+    filter.calcSize(size);
     return (
-      <Image
-        style={{
-          position: "absolute",
-          top: topCenter.y - newH + 10,
-          left: topCenter.x - newW,
-          width: newW,
-          height: newH,
-        }}
-        source={img}
-      />
+      <>
+        <Image
+          style={{
+            position: "absolute",
+            top:
+              pos.y - filter.height / 2 + filter.translate.top * filter.height,
+            left:
+              pos.x - filter.width / 2 + filter.translate.left * filter.width,
+            width: filter.width,
+            height: filter.height,
+            borderColor: "red",
+            borderWidth: globalThis.debug ? 1 : 0,
+          }}
+          source={img}
+        />
+        {globalThis.debug && <BoundingBox pos={origin} size={size} />}
+      </>
     );
   }
 }

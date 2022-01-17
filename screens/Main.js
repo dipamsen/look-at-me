@@ -1,5 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Image,
+  TouchableOpacity,
+  StatusBar,
+  ScrollView,
+  FlatList,
+} from "react-native";
 import { Camera } from "expo-camera";
 import * as Font from "expo-font";
 import {
@@ -7,8 +17,14 @@ import {
   Montserrat_700Bold,
 } from "@expo-google-fonts/montserrat";
 import Filter from "../components/Filter";
-import { StatusBar } from "expo-status-bar";
+// import * as StatusBar from "expo-status-bar";
 import * as FaceDetector from "expo-face-detector";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import { CROWN_1, CROWN_2 } from "../FilterData";
+
+const filters = [CROWN_1, CROWN_2];
+const shutterSize = 80;
+globalThis.debug = false;
 
 class Main extends React.Component {
   constructor(props) {
@@ -17,6 +33,7 @@ class Main extends React.Component {
       hasCamPerms: null,
       fontsLoaded: false,
       faces: [],
+      selectedFilters: new Set([CROWN_1]),
     };
   }
   async loadFonts() {
@@ -33,7 +50,15 @@ class Main extends React.Component {
     this.loadFonts();
   }
   render() {
-    const { hasCamPerms, fontsLoaded, faces } = this.state;
+    const toggleFilter = (fl) => {
+      // if (this.state.selectedFilters.has(fl)) {
+      //   this.state.selectedFilters.delete(fl);
+      // } else {
+      //   this.state.selectedFilters.add(fl);
+      // }
+      this.setState({ selectedFilters: new Set([fl]) });
+    };
+    const { hasCamPerms, fontsLoaded, faces, selectedFilters } = this.state;
     if (hasCamPerms === null || !fontsLoaded) {
       return <View />;
     }
@@ -44,9 +69,10 @@ class Main extends React.Component {
         </View>
       );
     }
+
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar style="light" />
+        <StatusBar barStyle="light-content" />
         <View style={styles.headingContainer}>
           <Image
             source={require("../assets/appIcon.png")}
@@ -56,6 +82,7 @@ class Main extends React.Component {
         </View>
         <View style={styles.cameraStyle}>
           <Camera
+            ref={(camera) => (this.cam = camera)}
             style={{
               flex: 1,
             }}
@@ -76,12 +103,49 @@ class Main extends React.Component {
             }}
             onFacesDetectionError={console.log}
           ></Camera>
-          {faces.map((face, i) => (
-            <Filter key={i} face={face} />
-          ))}
+          {faces.map((face, i) =>
+            [...selectedFilters].map((filter, j) => (
+              <Filter key={i + "" + j} face={face} filter={filter} />
+            ))
+          )}
         </View>
-
-        <View style={styles.framesContainer}></View>
+        {/* Uncomment for Shutter */}
+        {/* <View style={styles.shutterContainer}>
+          <TouchableOpacity style={styles.shutter}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <FontAwesome5 name="camera" size={35} />
+            </View>
+          </TouchableOpacity>
+        </View> */}
+        <View style={styles.filtersContainer}>
+          {/* <ScrollView> */}
+          {filters.map((filter) => (
+            <TouchableOpacity
+              key={filter.url}
+              style={[
+                styles.filter,
+                this.state.selectedFilters.has(filter)
+                  ? {
+                      borderColor: "blue",
+                      borderWidth: 2,
+                      backgroundColor: "lightblue",
+                    }
+                  : {},
+              ]}
+              activeOpacity={0.9}
+              onPress={() => toggleFilter(filter)}
+            >
+              <Image source={filter.image} />
+            </TouchableOpacity>
+          ))}
+          {/* </ScrollView> */}
+        </View>
       </SafeAreaView>
     );
   }
@@ -91,7 +155,7 @@ export default Main;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    //  backgroundColor: "black"
+    backgroundColor: "black",
   },
   headingContainer: {
     flex: 0.1,
@@ -99,7 +163,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "orange",
-    marginTop: 30,
   },
   logo: {
     width: 60,
@@ -107,17 +170,38 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginRight: 10,
   },
+  shutterContainer: {
+    height: 5,
+    backgroundColor: "white",
+    zIndex: 1,
+  },
+  shutter: {
+    width: shutterSize,
+    height: shutterSize,
+    borderRadius: shutterSize / 2,
+    backgroundColor: "white",
+    alignSelf: "center",
+    transform: [{ translateY: -shutterSize / 2 }],
+  },
   titleText: {
     fontSize: 30,
     color: "black",
     fontFamily: "Bold",
   },
-  cameraStyle: { flex: 0.7 },
-  framesContainer: {
-    flex: 0.2,
-    paddingLeft: 20,
-    paddingRight: 20,
-    paddingTop: 30,
+  cameraStyle: { flex: 0.65 },
+  filtersContainer: {
+    flex: 0.25,
     backgroundColor: "orange",
+    flexDirection: "row",
+  },
+  filter: {
+    backgroundColor: "white",
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 10,
+    marginVertical: 20,
   },
 });
